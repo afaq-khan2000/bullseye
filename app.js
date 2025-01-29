@@ -2,16 +2,21 @@
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
-const fileUpload = require("express-fileupload");
 const restApis = require("./src/routes");
-const DB = require("./src/dbConfig/mdbConnection");
-const moment = require("moment");
-const path = require("path");
-const fs = require("fs");
+const connectDB = require("./src/dbConfig/dbConnection");
 
 // App Configuration
 const app = express();
 const server = http.createServer(app);
+
+// Database Connection
+connectDB()
+  .then(() => {
+    console.log("Database Connected");
+  })
+  .catch((err) => {
+    console.log("Database Connection Error", err);
+  });
 
 const corsOptions = {
   origin: "*",
@@ -23,7 +28,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(fileUpload());
 
 // static serves
 app.use("/static/files", express.static("./upload"));
@@ -37,7 +41,7 @@ app.use("/api/", restApis);
 app.get("/status", (req, res) => {
   res.status(200).json({
     status: "Healthy",
-    API: "Lead Management API",
+    API: "BullsEye APIS",
     version: 1.0,
     developer: "Muhammad Afaq Khan",
   });

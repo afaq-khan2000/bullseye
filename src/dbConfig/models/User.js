@@ -1,54 +1,36 @@
-const { DataTypes } = require("sequelize");
-const { sequelize } = require("../mdbConnection");
+const mongoose = require("mongoose");
 
-const User = sequelize.define(
-  "User",
+const Schema = mongoose.Schema;
+
+const userSchema = new Schema(
   {
-    user_id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-      allowNull: false,
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
     },
     username: {
-      type: DataTypes.STRING,
+      type: String,
+      required: true,
       unique: true,
-      allowNull: false,
+      trim: true,
     },
-    email: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: false,
-    },
-    password_hash: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    first_name: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-    },
-    last_name: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-    },
-    dealership_name: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-    },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
-    credits: {
-      type: DataTypes.FLOAT,
-      defaultValue: 30.0,
+    role: {
+      type: String,
+      enum: ["advisor", "investor", "admin"],
+      required: true,
     },
   },
   {
-    timestamps: false,
-    tableName: "users",
+    timestamps: true,
   }
 );
+
+const User = mongoose.model("User", userSchema);
 
 module.exports = User;

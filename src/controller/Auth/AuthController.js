@@ -1,25 +1,14 @@
-const path = require("path");
-const moment = require("moment");
-const DB = require("../../dbConfig/mdbConnection");
+const User = require("../../dbConfig/models/User");
 const { hashPassword, comparePassword } = require("../../Helper/hashPasswordHelper");
 const { generateToken } = require("../../Helper/jwtHelper");
 
 const AuthController = {
   async signup(req, res) {
-    let t;
     try {
-      t = await DB.sequelize.transaction();
-      const {
-        username,
-        email,
-        password,
-        first_name,
-        last_name,
-        dealership_name,
-      } = req.body;
+      const { username, email, password, role } = req.body;
 
-      const userExist = await DB.UserModel.findOne({
-        where: { email },
+      const userExist = await User.findOne({
+        email,
       });
 
       if (userExist) {
@@ -28,59 +17,57 @@ const AuthController = {
 
       let hashedPassword = await hashPassword(password);
 
-      const user = await DB.UserModel.create(
-        {
-          username,
-          email,
-          password_hash: hashedPassword,
-          first_name,
-          last_name,
-          dealership_name,
-        },
-        { transaction: t }
-      );
+      const user = await User.create({
+        username,
+        email,
+        password: hashedPassword,
+        role,
+      });
 
-      await t.commit();
-      return res.successResponse(true, { user }, "User created successfully");
+      // create token
+      let tokenUser = {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      };
+      const token = generateToken(tokenUser);
+
+      return res.successResponse(true, { user, token }, "User created successfully");
     } catch (error) {
-      await t.rollback();
       console.log("signup: ", error);
       return res.errorResponse(true, error.message);
     }
   },
 
-  // login
   async login(req, res) {
     try {
       const { email, password } = req.body;
-      const user = await DB.UserModel.findOne({
-        where: { email },
+
+      const user = await User.findOne({
+        email,
       });
 
       if (!user) {
         return res.errorResponse(true, "User not found");
       }
 
-      const validPass = await comparePassword(password, user.password_hash);
-      if (!validPass) {
+      const passwordMatch = await comparePassword(password, user.password);
+
+      if (!passwordMatch) {
         return res.errorResponse(true, "Invalid password");
       }
 
-      let token = generateToken({
-        user_id: user.user_id,
-        email: user.email,
+      // create token
+      let tokenUser = {
+        id: user._id,
         username: user.username,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        dealership_name: user.dealership_name,
-        created_at: moment().format(),
-      });
+        email: user.email,
+        role: user.role,
+      };
+      const token = generateToken(tokenUser);
 
-      return res.successResponse(
-        true,
-        { token, user },
-        "User logged in successfully"
-      );
+      return res.successResponse(true, { user, token }, "Login successful");
     } catch (error) {
       console.log("login: ", error);
       return res.errorResponse(true, error.message);
