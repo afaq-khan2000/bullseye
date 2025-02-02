@@ -1,5 +1,5 @@
-const DB = require("../dbConfig/mdbConnection");
-const { verifyToken, decodeToken } = require("../Helper/jwtHelper");
+const User = require("../dbConfig/models/User");
+const { verifyToken } = require("../Helper/jwtHelper");
 
 exports.authenticateUser = () => {
   return async function (req, res, next) {
@@ -8,9 +8,7 @@ exports.authenticateUser = () => {
       if (token) {
         const decoded = verifyToken(token);
         if (decoded) {
-          const user = await DB.UserModel.findOne({
-            where: { user_id: decoded.user_id },
-          });
+          const user = await User.findById(decoded.id);
           if (user) {
             req.user = user;
             next();

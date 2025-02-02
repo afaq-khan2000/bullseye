@@ -1,4 +1,5 @@
 const User = require("../../dbConfig/models/User");
+const Investor = require('../../dbConfig/models/Investor');
 const { hashPassword, comparePassword } = require("../../Helper/hashPasswordHelper");
 const { generateToken } = require("../../Helper/jwtHelper");
 
@@ -8,11 +9,19 @@ const AuthController = {
       const { username, email, password, role } = req.body;
 
       const userExist = await User.findOne({
-        email,
+        $or: [
+          { email },
+          { username }
+        ]
       });
 
+      console.log("userExist: ", userExist);
+
       if (userExist) {
-        return res.errorResponse(true, "User already exist");
+        const errorMessage = userExist.username === username 
+          ? "Username already exists" 
+          : "Email already exists";
+        return res.errorResponse(true, errorMessage);
       }
 
       let hashedPassword = await hashPassword(password);
@@ -23,6 +32,12 @@ const AuthController = {
         password: hashedPassword,
         role,
       });
+      
+      if (role === 'investor') {
+        await Investor.create({
+          userId: user._id
+        });
+      }
 
       // create token
       let tokenUser = {
